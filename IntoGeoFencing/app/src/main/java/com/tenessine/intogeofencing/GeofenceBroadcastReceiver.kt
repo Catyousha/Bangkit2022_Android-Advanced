@@ -18,17 +18,25 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
   @SuppressLint("LongLogTag")
   override fun onReceive(context: Context, intent: Intent) {
     when (intent.action) {
+      // action yang diterima dari activity
       ACTION_GEOFENCE_EVENT -> {
+        // menangkap pesan yang dibawa dari activity
         val geofencingEvent = GeofencingEvent.fromIntent(intent)
 
+        // error handling
         if (geofencingEvent.hasError()) {
           val errorMessage = GeofenceStatusCodes.getStatusCodeString(geofencingEvent.errorCode)
           Log.e(TAG, errorMessage)
           return
         }
 
+        // mengambil tipe transisi yang terjadi
         val geofenceTransition = geofencingEvent.geofenceTransition
+
+        // kalau user masuk atau menetap dalam area geofencing, jalankan operasi
         if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER || geofenceTransition == Geofence.GEOFENCE_TRANSITION_DWELL) {
+
+          // jenis pesan yang akan ditampilkan
           val geofenceTransitionString =
             when (geofenceTransition) {
               Geofence.GEOFENCE_TRANSITION_ENTER -> "Anda telah memasuki area"
@@ -36,8 +44,10 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
               else -> "Invalid transition type"
             }
 
+          // string yang bakal ditampilkan di notifikasi
           val triggeringGeofences = geofencingEvent.triggeringGeofences
           val requestId = triggeringGeofences[0].requestId
+
           val geofenceTransitionDetails =
             String.format("%s: %s", geofenceTransitionString, requestId)
           Log.i(TAG, geofenceTransitionDetails)
@@ -53,6 +63,7 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
     }
   }
 
+  // notif yang akan muncul ketika geofence dalam kondisi yang ditentukan
   private fun sendNotification(context: Context, geofenceTransitionDetails: String) {
     val mNotificationManager =
       context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

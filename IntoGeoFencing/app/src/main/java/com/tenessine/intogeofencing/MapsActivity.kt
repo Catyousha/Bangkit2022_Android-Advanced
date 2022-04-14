@@ -64,6 +64,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
    */
   @SuppressLint("MissingPermission")
   override fun onMapReady(googleMap: GoogleMap) {
+    // setup marker awal sebagai lokasi geofencing
     val standford = LatLng(CENTER_LAT, CENTER_LNG)
     mMap = googleMap
     mMap.apply {
@@ -83,6 +84,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
           .strokeWidth(5f)
       )
 
+      // konfigurasi ui gmaps
       uiSettings.apply {
         if (allPermissionGranted()) {
           isMyLocationEnabled = true
@@ -99,22 +101,41 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
   @SuppressLint("MissingPermission")
   private fun addGeofence() {
+    // buat client untuk melakukan geofencing
     geofencingClient = LocationServices.getGeofencingClient(this)
+
+    // build geofencing request
     val geofence = Geofence.Builder()
+      // id
       .setRequestId("University")
+
+      // area lokasi
       .setCircularRegion(CENTER_LAT, CENTER_LNG, GEOFENCE_RADIUS.toFloat())
+
+      // kadaluarsa geofence
       .setExpirationDuration(Geofence.NEVER_EXPIRE)
+
+      // transisi yang diterima oleh geofencing yang akan diproses
       .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT)
+
+        // delay antara ENTER dan DWELL, masuk dan bisa dikatakan tinggal
       .setLoiteringDelay(5000)
       .build()
 
+    // 'compile' request yang dibuat
     val geofencingRequest = GeofencingRequest.Builder()
+        // pemicu awal (ENTER)
       .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
+
+        // colok konfigurasi request
       .addGeofence(geofence)
       .build()
 
+    // hapus geofencing sebelumnya yang terasosiasi dengan pendingintent berikut
     geofencingClient.removeGeofences(geofencePendingIntent).run {
       addOnCompleteListener {
+        // setelah diremove, entah emang ada sebelumnya atau kagak, tambahkan geofencing baru
+        // kaitkan request dengan pendingintent
         geofencingClient.addGeofences(geofencingRequest, geofencePendingIntent).run {
           addOnSuccessListener {
             Log.d(TAG, "Geofence added")
@@ -123,14 +144,19 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             Log.d(TAG, "Geofence failed")
           }
         }
+
       }
     }
   }
 
+  // yang akan dipanggil ketika transisi geofencing terjadi
   private val geofencePendingIntent: PendingIntent by lazy {
+    // membuat intent untuk menampung data action dan tujuan broadcast receivernya
     val intent = Intent(this, GeofenceBroadcastReceiver::class.java).apply {
       action = GeofenceBroadcastReceiver.ACTION_GEOFENCE_EVENT
     }
+
+    // eksekusi broadcast
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
       PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_MUTABLE)
     } else {
